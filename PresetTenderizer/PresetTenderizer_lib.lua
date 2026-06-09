@@ -763,6 +763,10 @@ function M.empty_store()
 end
 
 function M.load_store_from_lua(path)
+  if type(path) ~= "string" or path == "" then
+    return nil
+  end
+
   local chunk = loadfile(path)
   if not chunk then
     return nil
@@ -788,25 +792,45 @@ function M.save_user_store(user_id, store)
 end
 
 function M.load_legacy_flat_store()
-  local json = M.get_json()
-  local store
+  local function storage_exists(path)
+    return type(path) == "string" and path ~= "" and reaper.file_exists(path)
+  end
 
-  for _, legacy_path in ipairs(M.get_legacy_flat_storage_paths()) do
-    store = json.read_file(legacy_path)
+  local json = M.get_json()
+  local paths = M.get_legacy_flat_storage_paths()
+  if type(paths) ~= "table" then
+    return nil
+  end
+
+  local i, legacy_path, lua_path, store
+  for i = 1, #paths do
+    legacy_path = paths[i]
+    if storage_exists(legacy_path) then
+      store = json.read_file(legacy_path)
+      if store then
+        return store
+      end
+    end
+  end
+
+  legacy_path = M.get_legacy_storage_path()
+  if storage_exists(legacy_path) then
+    store = M.load_store_from_lua(legacy_path)
     if store then
       return store
     end
   end
 
-  store = M.load_store_from_lua(M.get_legacy_storage_path())
-  if store then
-    return store
-  end
-
-  for _, legacy_path in ipairs(M.get_legacy_flat_storage_paths()) do
-    store = M.load_store_from_lua(legacy_path:gsub("%.json$", ".lua"))
-    if store then
-      return store
+  for i = 1, #paths do
+    legacy_path = paths[i]
+    if type(legacy_path) == "string" then
+      lua_path = legacy_path:gsub("%.json$", ".lua")
+      if storage_exists(lua_path) then
+        store = M.load_store_from_lua(lua_path)
+        if store then
+          return store
+        end
+      end
     end
   end
 
@@ -1025,7 +1049,12 @@ function M.ensure_users_migrated()
   local registry = M.load_users_registry()
 
   if #(registry.users or {}) == 0 then
-    local legacy_store = M.load_legacy_flat_store()
+    local legacy_store
+    local ok, result = pcall(M.load_legacy_flat_store)
+    if ok and type(result) == "table" then
+      legacy_store = result
+    end
+
     table.insert(registry.users, {
       id = M.DEFAULT_USER_ID,
       display_name = "Default",
