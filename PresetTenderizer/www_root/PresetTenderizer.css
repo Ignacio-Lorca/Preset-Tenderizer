@@ -527,6 +527,21 @@ button.primary:disabled {
   flex: 1;
 }
 
+.fx-status-song-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fx-status-song-name.active {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .fx-status-chip {
   color: var(--muted);
   font-size: 0.9rem;

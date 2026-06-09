@@ -23,6 +23,7 @@ var COPY = {
   detailsTenderized: "Tenderized",
   detailsFxCuts: "FX cuts",
   detailsMonitorPours: "Monitor pours",
+  footerSongLabel: "On deck",
   tooltips: {
     roster: "Open band roster: add, rename, or remove members and their preset collections",
     tenderize: "Save current vocal/instrument FX and monitor routing as a new preset",
@@ -153,6 +154,8 @@ function initElements() {
   els.jsonModalReload = document.getElementById("jsonModalReload");
   els.jsonModalCopy = document.getElementById("jsonModalCopy");
   els.jsonModalClose = document.getElementById("jsonModalClose");
+  els.footerSongLabel = document.getElementById("footerSongLabel");
+  els.footerSongName = document.getElementById("footerSongName");
   els.vocalFxNames = document.getElementById("vocalFxNames");
   els.instrumentFxNames = document.getElementById("instrumentFxNames");
   els.sectionMusician = document.getElementById("sectionMusician");
@@ -383,6 +386,7 @@ function selectSnapshot(name) {
   els.snapshotName.value = name;
   renderSnapshots();
   renderDetails();
+  renderLiveFx();
 }
 
 function updateLoadButtonsDisabled() {
@@ -726,6 +730,18 @@ function renderFxStatusChips(tracks) {
 function renderLiveFx() {
   var slice = sessionUserSlice();
   var liveFx = (slice && slice.live_fx) || {};
+  var song = state.selectedName || "";
+
+  if (els.footerSongLabel) {
+    els.footerSongLabel.textContent = COPY.footerSongLabel;
+  }
+  if (els.footerSongName) {
+    els.footerSongName.textContent = song || "—";
+    els.footerSongName.title = song;
+    els.footerSongName.className = song
+      ? "fx-status-song-name active"
+      : "fx-status-song-name";
+  }
 
   if (els.vocalFxNames) {
     els.vocalFxNames.innerHTML = renderFxStatusChips(liveFx.vocal);
