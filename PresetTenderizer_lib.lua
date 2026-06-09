@@ -73,6 +73,63 @@ function M.list_project_tracks()
   return tracks
 end
 
+function M.classify_project_tracks()
+  local classified = {}
+  local depth = 0
+
+  for i = 0, reaper.CountTracks(0) - 1 do
+    local tr = reaper.GetTrack(0, i)
+    local folder_depth = reaper.GetMediaTrackInfo_Value(tr, "I_FOLDERDEPTH")
+    local inside_folder = depth > 0
+    local is_folder = folder_depth > 0
+
+    table.insert(classified, {
+      track = tr,
+      guid = M.get_track_guid(tr),
+      name = M.get_track_name(tr),
+      index = i + 1,
+      is_folder = is_folder,
+      inside_folder = inside_folder,
+    })
+
+    depth = depth + folder_depth
+  end
+
+  return classified
+end
+
+function M.track_entry_for_web(entry)
+  return {
+    guid = entry.guid,
+    name = M.normalize_web_string(entry.name),
+    index = entry.index,
+  }
+end
+
+function M.list_folder_tracks()
+  local tracks = {}
+
+  for _, entry in ipairs(M.classify_project_tracks()) do
+    if entry.is_folder then
+      table.insert(tracks, entry)
+    end
+  end
+
+  return tracks
+end
+
+function M.list_monitor_candidate_tracks()
+  local tracks = {}
+
+  for _, entry in ipairs(M.classify_project_tracks()) do
+    if not entry.inside_folder then
+      table.insert(tracks, entry)
+    end
+  end
+
+  return tracks
+end
+
 function M.extract_fx_chain_chunk(track_chunk)
   if not track_chunk or track_chunk == "" then
     return nil
@@ -1298,12 +1355,17 @@ function M.build_web_state()
   end
 
   local tracks = {}
-  for _, entry in ipairs(M.list_project_tracks()) do
-    table.insert(tracks, {
-      guid = entry.guid,
-      name = M.normalize_web_string(entry.name),
-      index = entry.index,
-    })
+  local folder_tracks = {}
+  local monitor_tracks = {}
+  for _, entry in ipairs(M.classify_project_tracks()) do
+    local web_entry = M.track_entry_for_web(entry)
+    table.insert(tracks, web_entry)
+    if entry.is_folder then
+      table.insert(folder_tracks, web_entry)
+    end
+    if not entry.inside_folder then
+      table.insert(monitor_tracks, web_entry)
+    end
   end
 
   local per_user = {}
@@ -1345,6 +1407,8 @@ function M.build_web_state()
     active_user_id = M.get_active_user_id(),
     users = users,
     tracks = tracks,
+    folder_tracks = folder_tracks,
+    monitor_tracks = monitor_tracks,
     per_user = per_user,
   }
 end

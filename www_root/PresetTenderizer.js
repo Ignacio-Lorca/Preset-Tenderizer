@@ -315,6 +315,31 @@ function trackOptions(tracks, selectedGuid) {
   return options.join("");
 }
 
+function ensureTrackInList(tracks, savedGuid, allTracks) {
+  var list = (tracks || []).slice();
+  var i, track, found;
+
+  if (!savedGuid) {
+    return list;
+  }
+
+  for (i = 0; i < list.length; i++) {
+    if (list[i].guid === savedGuid) {
+      return list;
+    }
+  }
+
+  for (i = 0; i < (allTracks || []).length; i++) {
+    track = allTracks[i];
+    if (track.guid === savedGuid) {
+      list.push(track);
+      return list;
+    }
+  }
+
+  return list;
+}
+
 function formatDate(epoch) {
   if (!epoch) {
     return "—";
@@ -519,21 +544,22 @@ function renderDetails() {
     "</div>";
 }
 
-function renderTrackSelect(selectEl, tracks, savedGuid) {
+function renderTrackSelect(selectEl, tracks, savedGuid, allTracks) {
   var preserved = selectEl.value;
   var guid = savedGuid || "";
+  var displayTracks = ensureTrackInList(tracks, savedGuid, allTracks);
+  var i;
 
   if (preserved) {
-    var i;
-    for (i = 0; i < (tracks || []).length; i++) {
-      if (tracks[i].guid === preserved) {
+    for (i = 0; i < displayTracks.length; i++) {
+      if (displayTracks[i].guid === preserved) {
         guid = preserved;
         break;
       }
     }
   }
 
-  selectEl.innerHTML = trackOptions(tracks, guid);
+  selectEl.innerHTML = trackOptions(displayTracks, guid);
   selectEl.value = guid;
 }
 
@@ -771,9 +797,9 @@ function render() {
   var i, user, activeLabel;
 
   renderMusicianSelect();
-  renderTrackSelect(els.vocalTrack, state.data.tracks, config.vocal_guid);
-  renderTrackSelect(els.instrumentTrack, state.data.tracks, config.instrument_guid);
-  renderTrackSelect(els.monitorTrack, state.data.tracks, config.monitor_guid);
+  renderTrackSelect(els.vocalTrack, state.data.folder_tracks, config.vocal_guid, state.data.tracks);
+  renderTrackSelect(els.instrumentTrack, state.data.folder_tracks, config.instrument_guid, state.data.tracks);
+  renderTrackSelect(els.monitorTrack, state.data.monitor_tracks, config.monitor_guid, state.data.tracks);
 
   activeLabel = sessionUser;
   for (i = 0; i < users.length; i++) {
