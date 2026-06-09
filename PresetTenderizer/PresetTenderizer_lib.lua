@@ -412,9 +412,8 @@ function M.find_receive_index_for_source(monitor_tr, src_tr)
   return nil
 end
 
-function M.capture_receive_from_source(monitor_tr, src_tr)
-  local recv_idx = M.find_receive_index_for_source(monitor_tr, src_tr)
-  if recv_idx == nil then
+function M.capture_receive_at_index(monitor_tr, recv_idx, src_tr)
+  if not monitor_tr or not src_tr then
     return nil
   end
 
@@ -430,12 +429,17 @@ function M.capture_receive_from_source(monitor_tr, src_tr)
   return receive
 end
 
-function M.capture_monitor_receives_from_sources(monitor_tr, source_tracks)
+function M.capture_all_monitor_receives(monitor_tr)
   local receives = {}
+  if not monitor_tr then
+    return receives
+  end
 
-  for _, src_tr in ipairs(source_tracks) do
+  local recv_count = reaper.GetTrackNumSends(monitor_tr, -1)
+  for recv_idx = 0, recv_count - 1 do
+    local src_tr = reaper.GetTrackSendInfo_Value(monitor_tr, -1, recv_idx, "P_SRCTRACK")
     if src_tr then
-      local receive = M.capture_receive_from_source(monitor_tr, src_tr)
+      local receive = M.capture_receive_at_index(monitor_tr, recv_idx, src_tr)
       if receive then
         table.insert(receives, receive)
       end
@@ -449,25 +453,19 @@ function M.capture_snapshot(vocal_tr, instrument_tr, monitor_tr)
   if not monitor_tr then
     return nil, "Monitor track is not set."
   end
-  if not vocal_tr and not instrument_tr then
-    return nil, "Set at least one of vocal or instrument track."
-  end
 
   local tracks = {}
-  local source_tracks = {}
 
   if vocal_tr then
     for _, track_data in ipairs(M.capture_folder_fx_tracks(vocal_tr, "vocal")) do
       table.insert(tracks, track_data)
     end
-    table.insert(source_tracks, vocal_tr)
   end
 
   if instrument_tr then
     for _, track_data in ipairs(M.capture_folder_fx_tracks(instrument_tr, "instrument")) do
       table.insert(tracks, track_data)
     end
-    table.insert(source_tracks, instrument_tr)
   end
 
   for _, track_data in ipairs(tracks) do
@@ -477,7 +475,7 @@ function M.capture_snapshot(vocal_tr, instrument_tr, monitor_tr)
     end
   end
 
-  local receives = M.capture_monitor_receives_from_sources(monitor_tr, source_tracks)
+  local receives = M.capture_all_monitor_receives(monitor_tr)
   if #tracks == 0 and #receives == 0 then
     return nil, "Nothing to capture: no FX tracks inside folders and no monitor receives."
   end
@@ -1206,9 +1204,6 @@ function M.capture_and_save(name, user_id)
   local tracks = M.get_config_tracks(user_id)
   if not tracks.monitor_tr then
     return false, "Set monitor track before saving."
-  end
-  if not tracks.vocal_tr and not tracks.instrument_tr then
-    return false, "Set vocal and/or instrument track before saving."
   end
 
   local snapshot, err = M.capture_snapshot(tracks.vocal_tr, tracks.instrument_tr, tracks.monitor_tr)
