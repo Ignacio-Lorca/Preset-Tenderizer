@@ -3,7 +3,7 @@ local M = {}
 
 local LIB_DIR = debug.getinfo(1, "S").source:match("^@(.*[\\/])") or ""
 
-M.VERSION = 4
+M.VERSION = 5
 M.EXT_SECTION = "PresetTenderizer"
 M.LEGACY_EXT_SECTION = "MonitoringSnapshot"
 M.STORAGE_DIR_NAME = "PresetTenderizer"
@@ -383,28 +383,58 @@ function M.capture_folder_fx_tracks(folder_tr, parent_role)
   return tracks
 end
 
-function M.find_receive_index_for_source(monitor_tr, src_tr)
+function M.receive_key(receive)
+  return string.format(
+    "%s|%d|%d",
+    receive.source_guid or "",
+    tonumber(receive.I_SRCCHAN) or 0,
+    tonumber(receive.I_DSTCHAN) or 0
+  )
+end
+
+function M.find_receive_index_for_send(monitor_tr, src_tr, srcchan, dstchan)
+  if not monitor_tr or not src_tr then
+    return nil
+  end
+
+  srcchan = tonumber(srcchan) or 0
+  dstchan = tonumber(dstchan) or 0
   local recv_count = reaper.GetTrackNumSends(monitor_tr, -1)
   for recv_idx = 0, recv_count - 1 do
     local ok, src = pcall(function()
       return reaper.GetTrackSendInfo_Value(monitor_tr, -1, recv_idx, "P_SRCTRACK")
     end)
     if ok and src == src_tr then
-      return recv_idx
+      local r_src = reaper.GetTrackSendInfo_Value(monitor_tr, -1, recv_idx, "I_SRCCHAN")
+      local r_dst = reaper.GetTrackSendInfo_Value(monitor_tr, -1, recv_idx, "I_DSTCHAN")
+      if (tonumber(r_src) or 0) == srcchan and (tonumber(r_dst) or 0) == dstchan then
+        return recv_idx
+      end
     end
   end
 
-  local match_idx = 0
-  for i = 0, reaper.CountTracks(0) - 1 do
-    local candidate = reaper.GetTrack(0, i)
-    local send_count = reaper.GetTrackNumSends(candidate, 0)
-    for send_idx = 0, send_count - 1 do
-      local dest = reaper.GetTrackSendInfo_Value(candidate, 0, send_idx, "P_DESTTRACK")
-      if dest == monitor_tr then
-        if candidate == src_tr then
-          return match_idx
-        end
-        match_idx = match_idx + 1
+  return nil
+end
+
+function M.find_receive_index_for_source(monitor_tr, src_tr)
+  return M.find_receive_index_for_send(monitor_tr, src_tr, 0, 0)
+end
+
+function M.find_send_index_to_monitor(src_tr, monitor_tr, srcchan, dstchan)
+  if not src_tr or not monitor_tr then
+    return nil
+  end
+
+  srcchan = tonumber(srcchan) or 0
+  dstchan = tonumber(dstchan) or 0
+  local send_count = reaper.GetTrackNumSends(src_tr, 0)
+  for send_idx = 0, send_count - 1 do
+    local dest = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, "P_DESTTRACK")
+    if dest == monitor_tr then
+      local s_src = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, "I_SRCCHAN")
+      local s_dst = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, "I_DSTCHAN")
+      if (tonumber(s_src) or 0) == srcchan and (tonumber(s_dst) or 0) == dstchan then
+        return send_idx
       end
     end
   end
@@ -429,19 +459,71 @@ function M.capture_receive_at_index(monitor_tr, recv_idx, src_tr)
   return receive
 end
 
+function M.capture_receive_from_send(src_tr, send_idx)
+  if not src_tr then
+    return nil
+  end
+
+  local receive = {
+    source_guid = M.get_track_guid(src_tr),
+    source_name = M.get_track_name(src_tr),
+  }
+
+  for _, param in ipairs(SEND_PARAMS) do
+    receive[param] = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, param)
+  end
+
+  return receive
+end
+
 function M.capture_all_monitor_receives(monitor_tr)
   local receives = {}
+  local seen = {}
   if not monitor_tr then
     return receives
   end
 
+  -- Primary: every track send routed to the monitor (matches the routing matrix).
+  for i = 0, reaper.CountTracks(0) - 1 do
+    local src_tr = reaper.GetTrack(0, i)
+    local send_count = reaper.GetTrackNumSends(src_tr, 0)
+    for send_idx = 0, send_count - 1 do
+      local dest = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, "P_DESTTRACK")
+      if dest == monitor_tr then
+        local srcchan = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, "I_SRCCHAN")
+        local dstchan = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, "I_DSTCHAN")
+        local receive
+        local recv_idx = M.find_receive_index_for_send(monitor_tr, src_tr, srcchan, dstchan)
+        if recv_idx ~= nil then
+          receive = M.capture_receive_at_index(monitor_tr, recv_idx, src_tr)
+        else
+          receive = M.capture_receive_from_send(src_tr, send_idx)
+        end
+        if receive then
+          local key = M.receive_key(receive)
+          if not seen[key] then
+            seen[key] = true
+            table.insert(receives, receive)
+          end
+        end
+      end
+    end
+  end
+
+  -- Fallback: receive indices the send scan may miss (e.g. hardware inputs).
   local recv_count = reaper.GetTrackNumSends(monitor_tr, -1)
   for recv_idx = 0, recv_count - 1 do
-    local src_tr = reaper.GetTrackSendInfo_Value(monitor_tr, -1, recv_idx, "P_SRCTRACK")
-    if src_tr then
+    local ok, src_tr = pcall(function()
+      return reaper.GetTrackSendInfo_Value(monitor_tr, -1, recv_idx, "P_SRCTRACK")
+    end)
+    if ok and src_tr then
       local receive = M.capture_receive_at_index(monitor_tr, recv_idx, src_tr)
       if receive then
-        table.insert(receives, receive)
+        local key = M.receive_key(receive)
+        if not seen[key] then
+          seen[key] = true
+          table.insert(receives, receive)
+        end
       end
     end
   end
@@ -585,7 +667,7 @@ function M.restore_monitor_receives(monitor_tr, receives)
   local desired = {}
 
   for _, receive in ipairs(receives) do
-    desired[receive.source_guid] = receive
+    desired[M.receive_key(receive)] = receive
   end
 
   for i = 0, reaper.CountTracks(0) - 1 do
@@ -594,8 +676,17 @@ function M.restore_monitor_receives(monitor_tr, receives)
     local send_count = reaper.GetTrackNumSends(src_tr, 0)
     for send_idx = send_count - 1, 0, -1 do
       local dest = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, "P_DESTTRACK")
-      if dest == monitor_tr and not desired[guid] then
-        reaper.RemoveTrackSend(src_tr, 0, send_idx)
+      if dest == monitor_tr then
+        local srcchan = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, "I_SRCCHAN")
+        local dstchan = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, "I_DSTCHAN")
+        local key = M.receive_key({
+          source_guid = guid,
+          I_SRCCHAN = srcchan,
+          I_DSTCHAN = dstchan,
+        })
+        if not desired[key] then
+          reaper.RemoveTrackSend(src_tr, 0, send_idx)
+        end
       end
     end
   end
@@ -605,24 +696,26 @@ function M.restore_monitor_receives(monitor_tr, receives)
     if not src_tr then
       table.insert(errors, "Receive source not found: " .. (receive.source_name or receive.source_guid))
     else
-      local has_send = false
-      local send_count = reaper.GetTrackNumSends(src_tr, 0)
-      for send_idx = 0, send_count - 1 do
-        local dest = reaper.GetTrackSendInfo_Value(src_tr, 0, send_idx, "P_DESTTRACK")
-        if dest == monitor_tr then
-          has_send = true
-          break
-        end
-      end
+      local send_idx = M.find_send_index_to_monitor(
+        src_tr,
+        monitor_tr,
+        receive.I_SRCCHAN,
+        receive.I_DSTCHAN
+      )
 
-      if not has_send then
+      if send_idx == nil then
         local new_send = reaper.CreateTrackSend(src_tr, monitor_tr)
         if new_send < 0 then
           table.insert(errors, "Failed to create receive from " .. (receive.source_name or receive.source_guid))
         end
       end
 
-      local recv_idx = M.find_receive_index_for_source(monitor_tr, src_tr)
+      local recv_idx = M.find_receive_index_for_send(
+        monitor_tr,
+        src_tr,
+        receive.I_SRCCHAN,
+        receive.I_DSTCHAN
+      )
       if recv_idx ~= nil then
         M.set_receive_params(monitor_tr, recv_idx, receive)
       else
