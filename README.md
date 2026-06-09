@@ -1,52 +1,63 @@
 # Preset Tenderizer
 
-**Preset Tenderizer** is a lightweight Lua script generator for REAPER that helps you manage and switch guitar track FX presets on a per-song basis. Inspired by the smooth blending of flavors in a meat marinade, this tool "tenderizes" your workflow by automating preset changes with dedicated scripts.
+**Preset Tenderizer** saves and restores complete monitoring setups for live performance in REAPER. A snapshot captures:
 
----
+- **FX chains** on tracks inside the vocal and instrument folder tracks (not on the folders themselves)
+- **Monitor receives** from those folder tracks to the monitoring track: levels, pan, mute, phase, mono, send mode, and channel mappings
+- **Track names** on child FX tracks, set to the **primary plugin preset name** (skips FX containers) on capture and load
 
-## Features
+## Musicians
 
-- Define presets per track and FX plugin easily.
-- Generate one standalone REAPER Lua script per song.
-- Each generated script applies the configured presets and renames tracks accordingly.
-- Simplifies preset management without needing complex GUI interactions.
-- Designed for guitar FX chains but adaptable to other instruments.
+Each **musician** has their own:
 
----
+- Snapshot collection (same snapshot names can exist per musician without clashing)
+- Vocal folder, instrument folder, and monitor track mapping
 
-## Preset Tenderizer
-Preset Tenderizer is a streamlined REAPER Lua scripting tool designed to make switching guitar FX presets per song easy and fast. Instead of complex GUIs, it uses two simple script types:
+Use the **Musician** dropdown and **Manage** in the web UI to add, rename, delete, and switch musicians. Each browser tab remembers its own selected musician via `sessionStorage`, so you can open multiple tabs for different band members without them fighting over the dropdown. Capture, load, and track mapping in the web UI always target the musician selected in that tab.
 
-Reader script: Runs in REAPER to read the current preset combinations on your tracks and generates a formatted preset list you can copy.
+The project still stores a default **active musician** (`active_user_id` in ProjExtState). OSC/MIDI actions use that default unless overridden with `MUSICIAN_ID` in `PresetTenderizer_LoadByName.lua`. Loading or capturing from the web UI still affects the shared REAPER project session.
 
-Changer scripts: You paste the copied preset list into a standalone script that includes a core “preset apply” module. Each changer script applies the presets for a specific song.
+## Web UI setup
 
-## How It Works
-Run the reader script in REAPER. It scans your tracks and effects, then outputs a formatted preset list.
+Uses REAPER's built-in web server (`reaper_www_root` + `main.js`). No Node or npm.
 
-Copy the preset list from the REAPER console.
+1. Install all `PresetTenderizer*.lua` files and the `www_root/` folder in one REAPER Scripts directory.
+2. Run **PresetTenderizer_StartWebUI** (installs web files + starts the bridge). Use **PresetTenderizer_RestartWebUI** after code updates or if the page shows a stale connection. Run **PresetTenderizer_StopWebUI** to stop the bridge.
+3. In REAPER: **Preferences → Control/OSC/Web → Add → Web browser interface**.
+4. Select **PresetTenderizer.html** and open the **Access URL** (e.g. `http://127.0.0.1:8080/PresetTenderizer.html`).
+5. Keep the web bridge running while using the page (StartWebUI starts it; re-run if needed).
 
-Create a new changer script file and paste the copied list into it.
+After code updates, run **PresetTenderizer_InstallWebUI** or **PresetTenderizer_RestartWebUI** and hard-refresh the browser.
 
-The changer script includes a shared preset-application module that handles the actual setting of presets and renaming tracks.
+## Performance actions (OSC / MIDI / Stream Deck)
 
-Trigger the changer script via toolbar button or OSC to switch to that song’s presets instantly.
+| Script | Use |
+|--------|-----|
+| `PresetTenderizer_LoadByName.lua` | Edit `SNAPSHOT_NAME`; optional `MUSICIAN_ID` at top of file |
+| `PresetTenderizer_SaveCurrent.lua` | Prompt and save current state (active musician) |
 
-## Dependencies
+## Files
 
-REAPER with Lua scripting enabled.
+| File | Purpose |
+|------|---------|
+| `PresetTenderizer_lib.lua` | Capture, restore, storage, musicians, web command handling |
+| `PresetTenderizer_json.lua` | JSON encode/decode |
+| `PresetTenderizer_action.lua` | Shared logic for action scripts |
+| `PresetTenderizer_WebBridge.lua` | Web UI bridge (ProjExtState) |
+| `PresetTenderizer_InstallWebUI.lua` | Copy `www_root/` into `reaper_www_root` |
+| `PresetTenderizer_StartWebUI.lua` | Install + start bridge |
+| `PresetTenderizer_RestartWebUI.lua` | Reinstall web files + restart bridge |
+| `PresetTenderizer_StopWebUI.lua` | Stop the web bridge |
+| `www_root/PresetTenderizer.html` | Web page |
+| `www_root/PresetTenderizer.css` | Styles |
+| `www_root/PresetTenderizer.js` | Web logic (`wwr_req`) |
 
-Place all scripts in your REAPER scripts folder (e.g., C:\Users\<user>\AppData\Roaming\REAPER\Scripts).
+## Storage
 
-The changer scripts include a shared Lua file (preset_changer_core.lua) which handles applying presets and track renaming.
+```
+<project>/PresetTenderizer/
+  users.json
+  users/<musician_id>/snapshots.json
+```
 
-## Benefits
-
-No manual editing of Lua tables — just copy and paste output from the reader.
-
-Keeps preset application logic in one reusable module.
-
-Easy to create a new song preset script in seconds.
-
-Lightweight and requires no external UI libraries or dependencies.
-
+Legacy `MonitoringSnapshots/snapshots.json` and flat ProjExtState config are migrated into the `default` musician on first load.

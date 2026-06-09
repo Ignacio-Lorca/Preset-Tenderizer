@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Preset Tenderizer</title>
+    <link rel="stylesheet" href="PresetTenderizer.css" />
+    <script src="main.js"></script>
+    <script src="PresetTenderizer.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div>
+          <h1>Preset Tenderizer</h1>
+          <p class="subtitle">Tenderize vocal and instrument FX for Meat Smoothie live sets</p>
+        </div>
+        <div class="status" id="connectionStatus">
+          <span class="dot"></span>
+          <span class="label">Warming the blender…</span>
+        </div>
+      </header>
+
+      <details class="panel collapsible" id="sectionMusician" open>
+        <summary class="panel-summary"><h2>Kitchen Staff</h2></summary>
+        <div class="panel-body musician-bar">
+          <label>
+            Choose
+            <select id="musicianSelect"></select>
+          </label>
+          <button id="manageMusiciansBtn" class="secondary" type="button">Roster</button>
+        </div>
+      </details>
+
+      <details class="panel collapsible" id="sectionTrackSetup" open>
+        <summary class="panel-summary"><h2>Kitchen layout</h2></summary>
+        <div class="panel-body">
+          <div class="grid three">
+            <label>
+              Vocal folder
+              <select id="vocalTrack"></select>
+            </label>
+            <label>
+              Instrument folder
+              <select id="instrumentTrack"></select>
+            </label>
+            <label>
+              Monitor track
+              <select id="monitorTrack"></select>
+            </label>
+          </div>
+          <p class="hint">Pick vocal and instrument folders (FX lives on child tracks inside). Monitor hears the folder tracks.</p>
+          <p class="meta" id="projectMeta"></p>
+        </div>
+      </details>
+
+      <div class="main-grid">
+        <details class="panel collapsible" id="sectionSnapshots" open>
+          <summary class="panel-summary panel-summary-with-control">
+            <h2>On the menu</h2>
+            <input id="filterInput" type="search" placeholder="Filter the menu…" />
+          </summary>
+          <div class="panel-body">
+            <ul id="snapshotList" class="snapshot-list"></ul>
+          </div>
+        </details>
+
+        <details class="panel collapsible" id="sectionDetails" open>
+          <summary class="panel-summary"><h2>Recipe card</h2></summary>
+          <div class="panel-body">
+            <label>
+              Preset name
+              <input id="snapshotName" type="text" placeholder="e.g. Chorus Crunch" />
+            </label>
+            <div id="snapshotDetails" class="details"></div>
+            <div class="actions wrap">
+              <button id="captureBtn">Tenderize</button>
+              <button id="updateBtn" class="secondary">Re-tenderize</button>
+              <button id="loadBtn" class="primary">Serve</button>
+              <button id="deleteBtn" class="danger">Toss batch</button>
+              <button id="renameBtn" class="secondary">Relabel</button>
+              <button id="debugJsonBtn" class="secondary" type="button">Peek inside</button>
+            </div>
+            <p id="message" class="message" hidden></p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <footer class="fx-status-bar">
+      <div class="fx-status-row">
+        <span class="fx-status-label">Vocal blend</span>
+        <div id="vocalFxNames" class="fx-status-names">—</div>
+      </div>
+      <div class="fx-status-row">
+        <span class="fx-status-label">Rig blend</span>
+        <div id="instrumentFxNames" class="fx-status-names">—</div>
+      </div>
+    </footer>
+
+    <div id="musiciansModal" class="modal" hidden>
+      <div class="modal-backdrop" data-close-musicians-modal></div>
+      <div class="modal-panel" role="dialog" aria-labelledby="musiciansModalTitle" aria-modal="true">
+        <div class="modal-head">
+          <div>
+            <h2 id="musiciansModalTitle">Band roster</h2>
+            <p class="modal-note">Each band member has their own presets and kitchen layout.</p>
+          </div>
+          <button id="musiciansModalClose" class="secondary" type="button" aria-label="Close">Close</button>
+        </div>
+        <div class="modal-toolbar">
+          <label class="musician-add">
+            New band member
+            <input id="newMusicianName" type="text" placeholder="e.g. Bass" />
+          </label>
+          <button id="addMusicianBtn" class="primary" type="button">Add</button>
+        </div>
+        <ul id="musiciansList" class="musicians-list"></ul>
+      </div>
+    </div>
+
+    <div id="jsonModal" class="modal" hidden>
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-panel" role="dialog" aria-labelledby="jsonModalTitle" aria-modal="true">
+        <div class="modal-head">
+          <div>
+            <h2 id="jsonModalTitle">Snapshot JSON</h2>
+            <p id="jsonModalNote" class="modal-note"></p>
+          </div>
+          <button id="jsonModalClose" class="secondary" type="button" aria-label="Close">Close</button>
+        </div>
+        <div class="modal-toolbar">
+          <label class="modal-toggle">
+            <input id="jsonModalFullFx" type="checkbox" />
+            Larger FX chain preview
+          </label>
+          <button id="jsonModalReload" class="secondary" type="button">Reload</button>
+          <button id="jsonModalCopy" class="secondary" type="button">Copy JSON</button>
+        </div>
+        <pre id="jsonModalContent" class="modal-json">Loading…</pre>
+      </div>
+    </div>
+  </body>
+</html>
