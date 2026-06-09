@@ -21,7 +21,7 @@ The project still stores a default **active musician** (`active_user_id` in Proj
 
 Uses REAPER's built-in web server (`reaper_www_root` + `main.js`). No Node or npm.
 
-1. Install all `PresetTenderizer*.lua` files and the `www_root/` folder in one REAPER Scripts directory.
+1. Install the [`PresetTenderizer/`](PresetTenderizer/) folder in your REAPER Scripts directory (all `PresetTenderizer*.lua` files and `www_root/` together).
 2. Run **PresetTenderizer_StartWebUI** (installs web files + starts the bridge). Use **PresetTenderizer_RestartWebUI** after code updates or if the page shows a stale connection. Run **PresetTenderizer_StopWebUI** to stop the bridge.
 3. In REAPER: **Preferences → Control/OSC/Web → Add → Web browser interface**.
 4. Select **PresetTenderizer.html** and open the **Access URL** (e.g. `http://127.0.0.1:8080/PresetTenderizer.html`).
@@ -33,24 +33,26 @@ After code updates, run **PresetTenderizer_InstallWebUI** or **PresetTenderizer_
 
 | Script | Use |
 |--------|-----|
-| `PresetTenderizer_LoadByName.lua` | Edit `SNAPSHOT_NAME`; optional `MUSICIAN_ID` at top of file |
-| `PresetTenderizer_SaveCurrent.lua` | Prompt and save current state (active musician) |
+| `PresetTenderizer/PresetTenderizer_LoadByName.lua` | Edit `SNAPSHOT_NAME`; optional `MUSICIAN_ID` at top of file |
+| `PresetTenderizer/PresetTenderizer_SaveCurrent.lua` | Prompt and save current state (active musician) |
 
 ## Files
 
+All scripts and web assets live under [`PresetTenderizer/`](PresetTenderizer/):
+
 | File | Purpose |
 |------|---------|
-| `PresetTenderizer_lib.lua` | Capture, restore, storage, musicians, web command handling |
-| `PresetTenderizer_json.lua` | JSON encode/decode |
-| `PresetTenderizer_action.lua` | Shared logic for action scripts |
-| `PresetTenderizer_WebBridge.lua` | Web UI bridge (ProjExtState) |
-| `PresetTenderizer_InstallWebUI.lua` | Copy `www_root/` into `reaper_www_root` |
-| `PresetTenderizer_StartWebUI.lua` | Install + start bridge |
-| `PresetTenderizer_RestartWebUI.lua` | Reinstall web files + restart bridge |
-| `PresetTenderizer_StopWebUI.lua` | Stop the web bridge |
-| `www_root/PresetTenderizer.html` | Web page |
-| `www_root/PresetTenderizer.css` | Styles |
-| `www_root/PresetTenderizer.js` | Web logic (`wwr_req`) |
+| `PresetTenderizer/PresetTenderizer_lib.lua` | Capture, restore, storage, musicians, web command handling |
+| `PresetTenderizer/PresetTenderizer_json.lua` | JSON encode/decode |
+| `PresetTenderizer/PresetTenderizer_action.lua` | Shared logic for action scripts |
+| `PresetTenderizer/PresetTenderizer_WebBridge.lua` | Web UI bridge (ProjExtState) |
+| `PresetTenderizer/PresetTenderizer_InstallWebUI.lua` | Copy `www_root/` into `reaper_www_root` |
+| `PresetTenderizer/PresetTenderizer_StartWebUI.lua` | Install + start bridge |
+| `PresetTenderizer/PresetTenderizer_RestartWebUI.lua` | Reinstall web files + restart bridge |
+| `PresetTenderizer/PresetTenderizer_StopWebUI.lua` | Stop the web bridge |
+| `PresetTenderizer/www_root/PresetTenderizer.html` | Web page |
+| `PresetTenderizer/www_root/PresetTenderizer.css` | Styles |
+| `PresetTenderizer/www_root/PresetTenderizer.js` | Web logic (`wwr_req`) |
 
 ## Storage
 

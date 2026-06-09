@@ -106,30 +106,6 @@ function M.track_entry_for_web(entry)
   }
 end
 
-function M.list_folder_tracks()
-  local tracks = {}
-
-  for _, entry in ipairs(M.classify_project_tracks()) do
-    if entry.is_folder then
-      table.insert(tracks, entry)
-    end
-  end
-
-  return tracks
-end
-
-function M.list_monitor_candidate_tracks()
-  local tracks = {}
-
-  for _, entry in ipairs(M.classify_project_tracks()) do
-    if not entry.inside_folder then
-      table.insert(tracks, entry)
-    end
-  end
-
-  return tracks
-end
-
 function M.extract_fx_chain_chunk(track_chunk)
   if not track_chunk or track_chunk == "" then
     return nil
