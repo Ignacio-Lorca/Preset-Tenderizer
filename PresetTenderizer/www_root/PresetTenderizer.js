@@ -155,6 +155,7 @@ function initElements() {
   els.jsonModalCopy = document.getElementById("jsonModalCopy");
   els.jsonModalClose = document.getElementById("jsonModalClose");
   els.footerSongLabel = document.getElementById("footerSongLabel");
+  els.footerUserName = document.getElementById("footerUserName");
   els.footerSongName = document.getElementById("footerSongName");
   els.vocalFxNames = document.getElementById("vocalFxNames");
   els.instrumentFxNames = document.getElementById("instrumentFxNames");
@@ -707,48 +708,83 @@ function switchMusician(userId) {
   render();
 }
 
-function renderFxStatusChips(tracks) {
+function getActiveUserLabel() {
+  var sessionUser = getSessionUserId();
+  var users = (state.data && state.data.users) || [];
+  var i, user;
+
+  for (i = 0; i < users.length; i++) {
+    user = users[i];
+    if (user.id === sessionUser) {
+      return user.display_name || user.id;
+    }
+  }
+
+  return sessionUser || "—";
+}
+
+function fxStatusNamesClass(count) {
+  var n = count > 0 ? count : 5;
+  if (n > 8) {
+    return "fx-status-names fx-status-names--many";
+  }
+  if (n === 5) {
+    return "fx-status-names";
+  }
+  return "fx-status-names fx-status-names--" + n;
+}
+
+function renderFxStatusChips(tracks, containerEl) {
   var html = "";
-  var i, track, chipClass;
+  var i, track, chipClass, count, cols;
+
+  if (!containerEl) {
+    return;
+  }
+
+  count = tracks && tracks.length ? tracks.length : 0;
+  cols = count > 0 ? count : 5;
+  containerEl.className = fxStatusNamesClass(count);
+  containerEl.style.gridTemplateColumns = "repeat(" + cols + ", minmax(0, 1fr))";
 
   if (!tracks || tracks.length === 0) {
-    return "—";
+    containerEl.innerHTML = "—";
+    return;
   }
 
   for (i = 0; i < tracks.length; i++) {
     track = tracks[i];
-    if (i > 0) {
-      html += '<span class="fx-status-sep">·</span>';
-    }
     chipClass = track.muted ? "fx-status-chip" : "fx-status-chip active";
     html += '<span class="' + chipClass + '">' + escapeHtml(track.name || "(unnamed)") + "</span>";
   }
 
-  return html;
+  containerEl.innerHTML = html;
 }
 
 function renderLiveFx() {
   var slice = sessionUserSlice();
   var liveFx = (slice && slice.live_fx) || {};
   var song = state.selectedName || "";
+  var userLabel = getActiveUserLabel();
+  var deckTitle = userLabel + " · " + (song || "—");
 
   if (els.footerSongLabel) {
     els.footerSongLabel.textContent = COPY.footerSongLabel;
   }
+  if (els.footerUserName) {
+    els.footerUserName.textContent = userLabel;
+    els.footerUserName.title = deckTitle;
+  }
   if (els.footerSongName) {
     els.footerSongName.textContent = song || "—";
-    els.footerSongName.title = song;
+    els.footerSongName.title = deckTitle;
     els.footerSongName.className = song
       ? "fx-status-song-name active"
       : "fx-status-song-name";
   }
 
-  if (els.vocalFxNames) {
-    els.vocalFxNames.innerHTML = renderFxStatusChips(liveFx.vocal);
-  }
-  if (els.instrumentFxNames) {
-    els.instrumentFxNames.innerHTML = renderFxStatusChips(liveFx.instrument);
-  }
+  renderFxStatusChips(liveFx.vocal, els.vocalFxNames);
+  renderFxStatusChips(liveFx.instrument, els.instrumentFxNames);
 }
 
 var SECTION_STORAGE_PREFIX = "pt_section_";
@@ -808,27 +844,14 @@ function render() {
 
   var slice = sessionUserSlice();
   var config = (slice && slice.config) || {};
-  var sessionUser = getSessionUserId();
-  var users = state.data.users || [];
-  var i, user, activeLabel;
-
   renderMusicianSelect();
   renderTrackSelect(els.vocalTrack, state.data.folder_tracks, config.vocal_guid, state.data.tracks);
   renderTrackSelect(els.instrumentTrack, state.data.folder_tracks, config.instrument_guid, state.data.tracks);
   renderTrackSelect(els.monitorTrack, state.data.monitor_tracks, config.monitor_guid, state.data.tracks);
 
-  activeLabel = sessionUser;
-  for (i = 0; i < users.length; i++) {
-    user = users[i];
-    if (user.id === sessionUser) {
-      activeLabel = user.display_name || user.id;
-      break;
-    }
-  }
-
   els.projectMeta.textContent =
     "Band member: " +
-    activeLabel +
+    getActiveUserLabel() +
     " · Project: " +
     state.data.project_name +
     " · Storage: " +

@@ -502,8 +502,8 @@ button.primary:disabled {
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 1200px;
-  margin: 0 auto 6px;
+  width: 100%;
+  margin: 0 0 6px;
 }
 
 .fx-status-row:last-child {
@@ -518,13 +518,28 @@ button.primary:disabled {
   color: var(--muted);
 }
 
-.fx-status-names {
+.fx-status-deck {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px 0;
+  gap: 8px;
   min-width: 0;
   flex: 1;
+}
+
+.fx-status-user-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fx-status-deck-sep {
+  flex: 0 0 auto;
+  color: var(--panel-border);
+  user-select: none;
 }
 
 .fx-status-song-name {
@@ -542,9 +557,58 @@ button.primary:disabled {
   font-weight: 600;
 }
 
-.fx-status-chip {
-  color: var(--muted);
+.fx-status-names {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100%;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
   font-size: 0.9rem;
+}
+
+.fx-status-names--1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.fx-status-names--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fx-status-names--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.fx-status-names--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.fx-status-names--6 {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  font-size: clamp(0.65rem, 1.6vw, 0.85rem);
+}
+
+.fx-status-names--7 {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  font-size: clamp(0.6rem, 1.4vw, 0.8rem);
+}
+
+.fx-status-names--8 {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  font-size: clamp(0.55rem, 1.2vw, 0.75rem);
+}
+
+.fx-status-names--many {
+  font-size: clamp(0.5rem, 1vw, 0.7rem);
+}
+
+.fx-status-chip {
+  min-width: 0;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
 
 .fx-status-chip.active {
@@ -553,12 +617,6 @@ button.primary:disabled {
   background: rgba(79, 140, 255, 0.12);
   border-radius: 6px;
   padding: 2px 8px;
-}
-
-.fx-status-sep {
-  color: var(--panel-border);
-  margin: 0 6px;
-  user-select: none;
 }
 
 @media (max-width: 900px) {
