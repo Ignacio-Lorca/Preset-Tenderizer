@@ -612,9 +612,10 @@ button.primary:disabled {
 }
 
 .fx-status-chip.active {
-  color: var(--accent);
-  font-weight: 600;
-  background: rgba(79, 140, 255, 0.12);
+  color: #fff;
+  font-weight: 700;
+  background: transparent;
+  border: 1px solid #e74c3c;
   border-radius: 6px;
   padding: 2px 8px;
 }

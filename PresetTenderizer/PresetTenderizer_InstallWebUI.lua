@@ -18,13 +18,13 @@ for _, name in ipairs(files) do
   local target = target_dir .. name
   local in_file = io.open(source, "rb")
   if not in_file then
-    reaper.ShowConsoleMsg("Missing file: " .. source .. "\n")
+    -- reaper.ShowConsoleMsg("Missing file: " .. source .. "\n")
   else
     local data = in_file:read("*a")
     in_file:close()
     local out_file = io.open(target, "wb")
     if not out_file then
-      reaper.ShowConsoleMsg("Could not write: " .. target .. "\n")
+      -- reaper.ShowConsoleMsg("Could not write: " .. target .. "\n")
     else
       out_file:write(data)
       out_file:close()
@@ -33,6 +33,6 @@ for _, name in ipairs(files) do
   end
 end
 
-reaper.ShowConsoleMsg(string.format("Installed %d web file(s) to:\n%s\n", copied, target_dir))
-reaper.ShowConsoleMsg("In REAPER: Preferences > Control/OSC/Web > Add > Web browser interface\n")
-reaper.ShowConsoleMsg("Preset Tenderizer: select PresetTenderizer.html and use the Access URL shown there.\n")
+-- reaper.ShowConsoleMsg(string.format("Installed %d web file(s) to:\n%s\n", copied, target_dir))
+-- reaper.ShowConsoleMsg("In REAPER: Preferences > Control/OSC/Web > Add > Web browser interface\n")
+-- reaper.ShowConsoleMsg("Preset Tenderizer: select PresetTenderizer.html and use the Access URL shown there.\n")

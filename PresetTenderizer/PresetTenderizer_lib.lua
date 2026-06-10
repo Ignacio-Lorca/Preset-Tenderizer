@@ -343,9 +343,9 @@ function M.capture_track_fx(tr)
   else
     preset_name = M.get_fx_preset_name(tr)
     if fx_chain == "" then
-      reaper.ShowConsoleMsg(
-        "Warning: could not capture FX chain on track '" .. M.get_track_name(tr) .. "'.\n"
-      )
+      -- reaper.ShowConsoleMsg(
+      --   "Warning: could not capture FX chain on track '" .. M.get_track_name(tr) .. "'.\n"
+      -- )
     end
     if preset_name ~= "" then
       M.set_track_name(tr, preset_name)
